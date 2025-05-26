@@ -1,10 +1,10 @@
-# AWS SQS and Lambda with aws-syndicate
+# AWS SNS and Lambda with aws-syndicate
 
-This task involves creating the Lambda integration with SQS queue. The 'SQS Handler' Lambda should be triggered by an SQS queue and log the message content to CloudWatch Logs.
+This task involves creating the Lambda integration with an SNS topic. 'SNS Handler' Lambda should be triggered by an SNS topic and log the message content to CloudWatch Logs.
 
 Architecture:
 
-- SQS queue 'async_queue' -> AWS Lambda 'sqs_handler'
+- SNS topic 'lambda_topic' -> AWS Lambda 'sns_handler'
 
 Additional information:
 
@@ -15,14 +15,14 @@ Additional information:
 
 According to README.md:
 
-- Build a solution to resolve the task 'AWS SQS and Lambda with aws-syndicate'.
+- Build a solution to resolve the task 'AWS SNS and Lambda with aws-syndicate'.
 - Generate YAML and JSON examples and use the aws-syndicate CLI. Configure the solution (as per the `Objectives` section).
 - Using AWS API calls, check if all necessary resources, permissions and policies that they are already configured (as per the `Task Resources` section).
 - Verify the solution using the AWS Console and API calls.
 
 ## TOC
 
-- [AWS SQS and Lambda with aws-syndicate](#aws-sqs-and-lambda-with-aws-syndicate)
+- [AWS SNS and Lambda with aws-syndicate](#aws-sns-and-lambda-with-aws-syndicate)
   - [Prompt](#prompt)
   - [TOC](#toc)
   - [Requirements](#requirements)
@@ -45,11 +45,11 @@ According to README.md:
       - [2a. Set environment variables](#2a-set-environment-variables)
       - [2b. Check resources\_prefix and resources\_suffix in the syndicate.yml file](#2b-check-resources_prefix-and-resources_suffix-in-the-syndicateyml-file)
       - [2c. Change lambdas\_alias\_name in the syndicate\_aliases.yml file](#2c-change-lambdas_alias_name-in-the-syndicate_aliasesyml-file)
-    - [3. Generate 'SQS Handler' Lambda Function](#3-generate-sqs-handler-lambda-function)
-    - [4. Generate SQS Queue Resource in Meta](#4-generate-sqs-queue-resource-in-meta)
-      - [4a. Change sqs\_queue meta-data in the deployment\_resources.json file](#4a-change-sqs_queue-meta-data-in-the-deployment_resourcesjson-file)
+    - [3. Generate 'SNS Topic' Lambda Function](#3-generate-sns-topic-lambda-function)
+    - [4. Generate SNS Topic Resource in Meta](#4-generate-sns-topic-resource-in-meta)
+      - [4a. Change sns\_topic meta-data in the deployment\_resources.json file](#4a-change-sns_topic-meta-data-in-the-deployment_resourcesjson-file)
       - [4b. Change iam\_policy in the deployment\_resources.json file](#4b-change-iam_policy-in-the-deployment_resourcesjson-file)
-    - [5. Configure Lambda to be Triggered by the Queue](#5-configure-lambda-to-be-triggered-by-the-queue)
+    - [5. Configure Lambda to be Triggered by the Topic](#5-configure-lambda-to-be-triggered-by-the-topic)
     - [6. Implement Lambda Function Code](#6-implement-lambda-function-code)
     - [7. Deploy the Solution](#7-deploy-the-solution)
     - [8. Verification Steps](#8-verification-steps)
@@ -68,7 +68,7 @@ According to README.md:
 ### Objectives
 
 1. Use aws-syndicate framework.
-2. Create an 'SQS Handler' Lambda that logs messages from an SQS queue.
+2. Create an 'SNS Handler' Lambda that logs messages from an SNS topic.
 3. Check with AWS Console
 4. Check with AWS CLI
 
@@ -76,8 +76,8 @@ According to README.md:
 
 Please note it is obligatory to stick to the following resources naming in order to pass the task:
 
-- Lambda Function: sqs_handler
-- SQS Queue: async_queue
+- Lambda Function: sns_handler
+- SNS Queue: lambda_topic
 
 ### AWS-Syndicate Aliases Usage
 
@@ -189,13 +189,13 @@ export AWS_SESSION_TOKEN=""
 
 ```bash
 syndicate generate project --help
-syndicate generate project --name sqs-lambda
+syndicate generate project --name sns-lambda
 ```
 
 ### 2. Generate config
 
 ```bash
-cd sqs-lambda
+cd sns-lambda
 ```
 
 - [Run Sandbox programmatic credentials](#sandbox-programmatic-credentials)
@@ -205,7 +205,7 @@ cd sqs-lambda
 - Set SDCT_CONF environment variable
 
 ```bash
-export SDCT_CONF="/home/ik/aws-syndicate/claude/sqs-lambda/.syndicate-config-dev"
+export SDCT_CONF="/home/ik/aws-syndicate/claude/sns-lambda/.syndicate-config-dev"
 ```
 
 #### 2b. Check resources_prefix and resources_suffix in the syndicate.yml file
@@ -225,24 +225,24 @@ resources_suffix: -k3vb
 lambdas_alias_name: learn
 ```
 
-### 3. Generate 'SQS Handler' Lambda Function
+### 3. Generate 'SNS Topic' Lambda Function
 
-Inside your project, use aws-syndicate to [generate a Lambda function](https://github.com/epam/aws-syndicate/wiki/2.-Quick-start#224-creating-lambda-files) named 'SQS Handler'. This step creates the necessary files and configurations for the Lambda.
+Inside your project, use aws-syndicate to [generate a Lambda function](https://github.com/epam/aws-syndicate/wiki/2.-Quick-start#224-creating-lambda-files) named 'sns_handler'. This step creates the necessary files and configurations for the Lambda.
 
 ```bash
-syndicate generate lambda --name sqs_handler --runtime python
+syndicate generate lambda --name sns_handler --runtime python
 ```
 
-### 4. Generate SQS Queue Resource in Meta
+### 4. Generate SNS Topic Resource in Meta
 
-Use aws-syndicate to [generate metadata for an SQS queue resource](https://github.com/epam/aws-syndicate/wiki/4.-Resources-Meta-Descriptions#412-sqs-queue).
+Use aws-syndicate to [generate metadata for an SNS topic resource](https://github.com/epam/aws-syndicate/wiki/4.-Resources-Meta-Descriptions#46-sns-topic).
 
-- SQS Queue: async_queue
+- SNS Topic: sns_topic
 
 ```bash
-# sqs_queue
-syndicate generate meta sqs_queue --help
-syndicate generate meta sqs_queue --resource_name async_queue --visibility_timeout 100
+# sns_topic
+syndicate generate meta sns_topic --help
+syndicate generate meta sns_topic --resource_name lambda_topic --region eu-west-1
 ```
 
 - IAM policy
@@ -250,22 +250,27 @@ syndicate generate meta sqs_queue --resource_name async_queue --visibility_timeo
 
 ```bash
 syndicate generate meta iam_policy --help
-# syndicate generate meta iam_policy --resource_name async_queue_policy
-# syndicate generate meta iam_policy --resource_name sqs_handler_policy
 ```
 
-#### 4a. Change sqs_queue meta-data in the deployment_resources.json file
+#### 4a. Change sns_topic meta-data in the deployment_resources.json file
 
 ```json
 {
-    "async_queue": {
-    "resource_type": "sqs_queue",
-    "fifo_queue": false,
-    "visibility_timeout": 100,
-    "delay_seconds": 0,
-    "maximum_message_size": 1024,
-    "message_retention_period": 60,
-    "receive_message_wait_time_seconds": 0,
+  "lambda_topic": {
+    "resource_type": "sns_topic",
+    "region": "eu-west-1",
+    "display_name": "Lambda Topic",
+    "delivery_policy": {
+      "healthyRetryPolicy": {
+        "minDelayTarget": 20,
+        "maxDelayTarget": 20,
+        "numRetries": 3,
+        "numMaxDelayRetries": 0,
+        "numMinDelayRetries": 0,
+        "numNoDelayRetries": 0,
+        "backoffFunction": "linear"
+      }
+    },
     "policy": {
       "Version": "2012-10-17",
       "Statement": [
@@ -273,14 +278,13 @@ syndicate generate meta iam_policy --help
           "Effect": "Allow",
           "Principal": "*",
           "Action": [
-            "sqs:SendMessage"
+            "sns:Publish",
+            "sns:Subscribe"
           ],
           "Resource": "*"
         }
       ]
     },
-    "redrive_policy": {},
-    "content_based_deduplication": false,
     "tags": {}
   }
 }
@@ -307,9 +311,8 @@ syndicate generate meta iam_policy --help
             "ssm:PutParameter",
             "ssm:GetParameter",
             "kms:Decrypt",
-            "sqs:ReceiveMessage",
-            "sqs:DeleteMessage",
-            "sqs:GetQueueAttributes"
+            "sns:Receive",
+            "sns:GetTopicAttributes"
           ],
           "Effect": "Allow",
           "Resource": "*"
@@ -322,29 +325,28 @@ syndicate generate meta iam_policy --help
 }
 ```
 
-### 5. Configure Lambda to be Triggered by the Queue
+### 5. Configure Lambda to be Triggered by the Topic
 
 Complete Lambda configuration in deployment_resources.json:
 
 ```json
 {
+  "sns_handler": {
     "version": "1.0",
-    "name": "sqs_handler",
+    "name": "sns_handler",
     "func_name": "handler.lambda_handler",
     "resource_type": "lambda",
-    "iam_role_name": "sqs_handler-role",
+    "iam_role_name": "sns_handler-role",
     "runtime": "python3.10",
     "memory": 128,
     "timeout": 100,
-    "lambda_path": "lambdas/sqs_handler",
+    "lambda_path": "lambdas/sns_handler",
     "dependencies": [],
     "event_sources": [
-        {
-            "resource_type": "sqs_trigger",
-            "target_queue": "async_queue",
-            "batch_size": 10,
-            "maximum_batching_window_in_seconds": 5
-        }
+      {
+        "resource_type": "sns_topic_trigger",
+        "target_topic": "lambda_topic"
+      }
     ],
     "env_variables": {},
     "publish_version": true,
@@ -353,29 +355,30 @@ Complete Lambda configuration in deployment_resources.json:
     "ephemeral_storage": 512,
     "logs_expiration": "${logs_expiration}",
     "tags": {}
+  }
 }
 ```
 
 ### 6. Implement Lambda Function Code
 
-Create the Lambda function code in `src/sqs_handler.py`:
+Create the Lambda function code in `src/sns_handler.py`:
 
-- Option 1 (tested)
+- Option 1 (Simple and tested)
 
 ```python
 import json
 
 def lambda_handler(event, context):
     for record in event['Records']:
-        message_body = record['body']
-        print(f"Received SQS message: {message_body}")
+        sns_message = record['Sns']['Message']
+        print(f"Received SNS message: {sns_message}")
     return {
         'statusCode': 200,
-        'body': json.dumps('SQS message processed successfully!')
+        'body': json.dumps('SNS message processed successfully!')
     }
 ```
 
-- Option 2
+- Option 2 (Detailed logging)
 
 ```python
 import json
@@ -387,32 +390,37 @@ logger.setLevel(logging.INFO)
 
 def lambda_handler(event, context):
     """
-    SQS Handler Lambda function
-    Processes messages from SQS queue and logs them to CloudWatch
+    SNS Handler Lambda function
+    Processes messages from SNS topic and logs them to CloudWatch
     """
     
     logger.info(f"Received event: {json.dumps(event, indent=2)}")
     
-    # Process each record from SQS
+    # Process each record from SNS
     for record in event['Records']:
-        # Extract message details
-        message_body = record['body']
-        message_id = record['messageId']
-        receipt_handle = record['receiptHandle']
+        # Extract SNS message details
+        sns = record['Sns']
+        message = sns['Message']
+        subject = sns.get('Subject', 'No Subject')
+        topic_arn = sns['TopicArn']
+        message_id = sns['MessageId']
+        timestamp = sns['Timestamp']
         
         # Log message content
-        logger.info(f"Processing message ID: {message_id}")
-        logger.info(f"Message body: {message_body}")
-        logger.info(f"Receipt handle: {receipt_handle}")
+        logger.info(f"Processing SNS message ID: {message_id}")
+        logger.info(f"Topic ARN: {topic_arn}")
+        logger.info(f"Subject: {subject}")
+        logger.info(f"Message: {message}")
+        logger.info(f"Timestamp: {timestamp}")
         
         # Process the message (add your business logic here)
         try:
             # Parse JSON message if applicable
-            if message_body.startswith('{'):
-                parsed_message = json.loads(message_body)
+            if message.startswith('{'):
+                parsed_message = json.loads(message)
                 logger.info(f"Parsed JSON message: {parsed_message}")
             else:
-                logger.info(f"Plain text message: {message_body}")
+                logger.info(f"Plain text message: {message}")
                 
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON message: {e}")
@@ -423,7 +431,7 @@ def lambda_handler(event, context):
     return {
         'statusCode': 200,
         'body': json.dumps({
-            'message': f'Successfully processed {len(event["Records"])} messages'
+            'message': f'Successfully processed {len(event["Records"])} SNS messages'
         })
     }
 ```
@@ -433,7 +441,7 @@ def lambda_handler(event, context):
 ```bash
 # Package and deploy
 syndicate build
-syndicate deploy --deploy_name sqs-lambda-dev
+syndicate deploy --deploy_name sns-lambda-dev
 ```
 
 ### 8. Verification Steps
@@ -444,47 +452,53 @@ Check if resources are created:
 
 ```bash
 # Check Lambda function
-aws lambda get-function --function-name cmtr-ze58tzcf-sqs_handler-k3vb --region eu-west-1
+aws lambda get-function --function-name cmtr-ze58tzcf-sns_handler-k3vb --region eu-west-1
 
 # Check Lambda alias
-aws lambda get-alias --function-name cmtr-ze58tzcf-sqs_handler-k3vb --name learn --region eu-west-1
+aws lambda get-alias --function-name cmtr-ze58tzcf-sns_handler-k3vb --name learn --region eu-west-1
 
-# Check SQS queue
-aws sqs get-queue-url --queue-name cmtr-ze58tzcf-async_queue-k3vb --region eu-west-1
+# Check SNS topic
+aws sns list-topics --region eu-west-1 | grep cmtr-ze58tzcf-lambda_topic-k3vb
 
-# Check queue attributes
-aws sqs get-queue-attributes --queue-url $(aws sqs get-queue-url --queue-name cmtr-ze58tzcf-async_queue-k3vb --region eu-west-1 --query 'QueueUrl' --output text) --attribute-names All --region eu-west-1
+# Get topic ARN
+TOPIC_ARN=$(aws sns list-topics --region eu-west-1 --query 'Topics[?contains(TopicArn, `cmtr-ze58tzcf-lambda_topic-k3vb`)].TopicArn' --output text)
 
-# Check event source mapping
-aws lambda list-event-source-mappings --function-name cmtr-ze58tzcf-sqs_handler-k3vb:learn --region eu-west-1
+# Check topic attributes
+aws sns get-topic-attributes --topic-arn $TOPIC_ARN --region eu-west-1
+
+# Check topic subscriptions
+aws sns list-subscriptions-by-topic --topic-arn $TOPIC_ARN --region eu-west-1
 
 # Check IAM role
-aws iam get-role --role-name cmtr-ze58tzcf-sqs_handler_execution_role-k3vb --region eu-west-1
+aws iam get-role --role-name cmtr-ze58tzcf-sns_handler-role-k3vb --region eu-west-1
 ```
 
 #### 8.2. Test the Integration
 
-Send a test message to SQS queue:
+Send a test message to SNS topic:
 
 ```bash
-# Get queue URL
-QUEUE_URL=$(aws sqs get-queue-url --queue-name cmtr-ze58tzcf-async_queue-k3vb --region eu-west-1 --query 'QueueUrl' --output text)
+# Get topic ARN
+TOPIC_ARN=$(aws sns list-topics --region eu-west-1 --query 'Topics[?contains(TopicArn, `cmtr-ze58tzcf-lambda_topic-k3vb`)].TopicArn' --output text)
 
-# Send test message
-aws sqs send-message --queue-url $QUEUE_URL --message-body '{"test": "Hello from SQS!", "timestamp": "2024-01-01T12:00:00Z"}' --region eu-west-1
+# Send test message with subject
+aws sns publish --topic-arn $TOPIC_ARN --message '{"test": "Hello from SNS!", "timestamp": "2024-01-01T12:00:00Z"}' --subject "Test Message" --region eu-west-1
 
 # Send another test message
-aws sqs send-message --queue-url $QUEUE_URL --message-body 'Plain text message for testing' --region eu-west-1
+aws sns publish --topic-arn $TOPIC_ARN --message 'Plain text message for testing SNS-Lambda integration' --subject "Plain Text Test" --region eu-west-1
+
+# Send message without subject
+aws sns publish --topic-arn $TOPIC_ARN --message 'Message without subject' --region eu-west-1
 ```
 
 #### 8.3. Check CloudWatch Logs
 
 ```bash
 # List log groups
-aws logs describe-log-groups --log-group-name-prefix "/aws/lambda/cmtr-ze58tzcf-sqs_handler-k3vb" --region eu-west-1
+aws logs describe-log-groups --log-group-name-prefix "/aws/lambda/cmtr-ze58tzcf-sns_handler-k3vb" --region eu-west-1
 
 # Get recent log events
-LOG_GROUP="/aws/lambda/cmtr-ze58tzcf-sqs_handler-k3vb"
+LOG_GROUP="/aws/lambda/cmtr-ze58tzcf-sns_handler-k3vb"
 aws logs describe-log-streams --log-group-name $LOG_GROUP --order-by LastEventTime --descending --region eu-west-1
 
 # Get latest log stream
@@ -498,37 +512,41 @@ aws logs get-log-events --log-group-name $LOG_GROUP --log-stream-name $LATEST_ST
 
 1. **Lambda Function:**
    - Navigate to AWS Lambda Console
-   - Find function: `cmtr-ze58tzcf-sqs_handler-k3vb`
+   - Find function: `cmtr-ze58tzcf-sns_handler-k3vb`
    - Check Aliases tab for `learn` alias
-   - Verify event source mapping to SQS queue
+   - Verify SNS trigger configuration
+   - Check function permissions and execution role
 
-2. **SQS Queue:**
-   - Navigate to AWS SQS Console
-   - Find queue: `cmtr-ze58tzcf-async_queue-k3vb`
-   - Check queue properties and permissions
+2. **SNS Topic:**
+   - Navigate to AWS SNS Console
+   - Find topic: `cmtr-ze58tzcf-lambda_topic-k3vb`
+   - Check topic subscriptions (should show Lambda function)
+   - Verify topic permissions and delivery policy
+   - Test publishing messages from console
 
 3. **CloudWatch Logs:**
    - Navigate to CloudWatch Logs Console
-   - Check log group: `/aws/lambda/cmtr-ze58tzcf-sqs_handler-k3vb`
-   - Verify message processing logs
+   - Check log group: `/aws/lambda/cmtr-ze58tzcf-sns_handler-k3vb`
+   - Verify message processing logs appear after publishing SNS messages
+   - Check for any error logs or execution timeouts
 
 #### 8.5. Cleanup
 
 ```bash
 # Clean up resources
-syndicate clean --deploy_name sqs-lambda-dev
+syndicate clean --deploy_name sns-lambda-dev
 ```
 
 ### 9. Complete Project Structure
 
 ```bash
-sqs-lambda/
+sns-lambda/
 ├── .syndicate-config-dev/
 │   ├── syndicate.yml
 │   └── syndicate_aliases.yml
 ├── deployment_resources.json
 ├── src/
-│   └── sqs_handler.py
+│   └── sns_handler.py
 └── README.md
 ```
 
@@ -536,26 +554,35 @@ sqs-lambda/
 
 Common issues and solutions:
 
-1. **Permission Denied:** Ensure IAM role has correct SQS permissions
-2. **Lambda Not Triggered:** Check event source mapping configuration
+1. **Permission Denied:** Ensure Lambda execution role has necessary SNS permissions
+2. **Lambda Not Triggered:** Check SNS topic subscription and confirm Lambda function is subscribed
 3. **Logs Not Appearing:** Verify CloudWatch Logs permissions in IAM role
-4. **Queue Not Found:** Check resource naming with prefix/suffix
+4. **Topic Not Found:** Check resource naming with prefix/suffix matches exactly
+5. **Subscription Failed:** Ensure Lambda function exists before creating SNS subscription
+6. **Dead Letter Queue:** Consider adding DLQ for failed message processing
 
-This completes the AWS SQS and Lambda integration using aws-syndicate framework.
+**Additional Verification Commands:**
+
+```bash
+# Check if subscription is confirmed
+aws sns get-subscription-attributes --subscription-arn $(aws sns list-subscriptions-by-topic --topic-arn $TOPIC_ARN --query 'Subscriptions[0].SubscriptionArn' --output text) --region eu-west-1
+
+# Check Lambda function policy
+aws lambda get-policy --function-name cmtr-ze58tzcf-sns_handler-k3vb:learn --region eu-west-1
+```
+
+This completes the AWS SNS and Lambda integration using aws-syndicate framework.
 
 ## Results
 
-The solution Successfully tested the AWS SQS and Lambda integration with aws-syndicate!
+The solution Successfully tested the AWS SNS and Lambda integration with aws-syndicate!
 
-1. ✅ Set up the SQS queue (`async_queue`) and Lambda function (`sqs_handler`)
-2. ✅ Configure the proper IAM policies and event source mappings
-3. ✅ Deploy using aws-syndicate with the correct naming conventions
-4. ✅ Test the integration and verify the logs in CloudWatch
+1. ✅ Set up the SNS topic (`lambda_topic`) and Lambda function (`sns_handler`)
+2. ✅ Configure the proper event source mapping between SNS and Lambda
+3. ✅ Deploy using aws-syndicate with correct resource naming and aliases
+4. ✅ Test the integration and verify message processing in CloudWatch Logs
 
-The solution demonstrates a solid understanding of:
+The SNS-Lambda pattern is very useful for building event-driven architectures and decoupled systems. Having both SQS-Lambda and SNS-Lambda solutions in your aws-syndicate toolkit gives you flexibility for different messaging patterns:
 
-- AWS Syndicate framework usage
-- SQS-Lambda integration patterns
-- Proper resource naming with prefixes/suffixes
-- Lambda aliases and versioning
-- CloudWatch logging for monitoring
+- **SNS-Lambda**: Great for fanout scenarios, notifications, and pub/sub patterns
+- **SQS-Lambda**: Ideal for reliable message processing, queuing, and batch processing

@@ -1,0 +1,61 @@
+{
+    "lambda-basic-execution": {
+        "policy_content": {
+            "Statement": [
+                {
+                    "Action": [
+                        "logs:CreateLogGroup",
+                        "logs:CreateLogStream",
+                        "logs:PutLogEvents",
+                        "dynamodb:GetItem",
+                        "dynamodb:Query",
+                        "dynamodb:PutItem",
+                        "dynamodb:Batch*",
+                        "dynamodb:DeleteItem",
+                        "ssm:PutParameter",
+                        "ssm:GetParameter",
+                        "kms:Decrypt",
+                        "sns:Receive",
+                        "sns:GetTopicAttributes"
+                    ],
+                    "Effect": "Allow",
+                    "Resource": "*"
+                }
+            ],
+            "Version": "2012-10-17"
+        },
+        "resource_type": "iam_policy",
+        "tags": {}
+    },
+    "lambda_topic": {
+        "resource_type": "sns_topic",
+        "region": "eu-west-1",
+        "display_name": "Lambda Topic",
+        "delivery_policy": {
+            "healthyRetryPolicy": {
+                "minDelayTarget": 20,
+                "maxDelayTarget": 20,
+                "numRetries": 3,
+                "numMaxDelayRetries": 0,
+                "numMinDelayRetries": 0,
+                "numNoDelayRetries": 0,
+                "backoffFunction": "linear"
+            }
+        },
+        "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": "*",
+                    "Action": [
+                        "sns:Publish",
+                        "sns:Subscribe"
+                    ],
+                    "Resource": "*"
+                }
+            ]
+        },
+        "tags": {}
+    }
+}
